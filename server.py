@@ -8,7 +8,6 @@ from twisted.protocols.basic import LineOnlyReceiver
 
 class ServerProtocol(LineOnlyReceiver):
     factory: 'Server'
-
     login: str = None
 
     def connectionMade(self):
@@ -34,7 +33,6 @@ class ServerProtocol(LineOnlyReceiver):
         Sending messages to all clients except self.
         """
         for user in self.factory.clients:
-
             if user is not self:
                 user.sendLine(message.encode())
 
@@ -46,14 +44,10 @@ class ServerProtocol(LineOnlyReceiver):
             :return: is the login unique?
         """
         for user in self.factory.clients:
-
             if user is not self:
-
                 if user.login == login:
                     self.sendLine(f"Login {login} is already taken. Please use different one.".encode())
-
                     return False
-
         return True
 
     def lineReceived(self, line: bytes):
@@ -63,9 +57,7 @@ class ServerProtocol(LineOnlyReceiver):
         if self.login is not None:
 
             content = f"{self.login}: {content}"
-
-            self.factory.last_mess = content
-
+            self.factory.add_mess = content
             self.send_mess(content)
 
         else:
@@ -75,35 +67,25 @@ class ServerProtocol(LineOnlyReceiver):
             if content.startswith("login:"):
 
                 log = content.replace("login: ", "")
-
                 if self.check_login(log):
                     self.login = log
-
                     self.factory.clients.append(self)
-
                     self.sendLine(f"Welcome, {self.login}!".encode())
-
                     self.send_history()
-
                     self.send_mess(f"{self.login} joined the chat.")
 
             else:
-
                 self.sendLine("Invalid login".encode())
 
 
 class Server(ServerFactory):
     protocol = ServerProtocol
-
     clients: list
-
-    last_10_mess: list
+    _last_10_mess: list
 
     def startFactory(self):
         self.clients = []
-
-        self.last_10_mess = []
-
+        self._last_10_mess = []
         print("Server started")
 
     def stopFactory(self):
@@ -111,15 +93,14 @@ class Server(ServerFactory):
 
     @property
     def last_mess(self):
-        return self.last_10_mess
+        return self._last_10_mess
 
     @last_mess.setter
-    def last_mess(self, mess):
-        if len(self.last_10_mess) >= 10:
-            del self.last_10_mess[0]
-        self.last_10_mess.append(mess)
+    def add_mess(self, mess):
+        if len(self._last_10_mess) >= 10:
+            del self._last_10_mess[0]
+        self._last_10_mess.append(mess)
 
 
 reactor.listenTCP(1234, Server())
-
 reactor.run()

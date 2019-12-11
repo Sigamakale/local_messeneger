@@ -11,7 +11,7 @@ class ServerProtocol(LineOnlyReceiver):
 
     def connectionMade(self):
 
-        self.sendLine("Enter your login as 'login: your login'".encode())
+        self.sendLine("Enter your login as 'login:your login'".encode())
 
     def connectionLost(self, reason=connectionDone):
 
@@ -55,10 +55,17 @@ class ServerProtocol(LineOnlyReceiver):
 
         if self.login is not None:
 
-            time = strftime("%H:%M:%S", gmtime())
-            content = f"{time} {self.login}: {content}"
-            self.factory.add_mess = content
-            self.send_mess(content)
+            if content.lower() == ':exit':
+
+                self.sendLine(f"Bye, {self.login}.".encode())
+                self.transport.loseConnection()
+
+            else:
+
+                time = strftime("%H:%M:%S", gmtime())
+                content = f"{time} {self.login}: {content}"
+                self.factory.add_mess = content
+                self.send_mess(content)
 
         else:
 
@@ -66,18 +73,19 @@ class ServerProtocol(LineOnlyReceiver):
 
             if content.startswith("login:"):
 
-                log = content.replace("login: ", "")
+                log = content.replace("login:", "")
                 if self.check_login(log):
                     
                     self.login = log
                     self.factory.clients.append(self)
                     self.sendLine(f"Welcome, {self.login}!".encode())
+                    self.sendLine(f"For exit print ':exit'".encode())
                     self.send_history()
                     self.send_mess(f"{self.login} joined the chat.")
 
             else:
 
-                self.sendLine("Invalid login".encode())
+                self.sendLine("Invalid login, try again.".encode())
 
 
 class Server(ServerFactory):

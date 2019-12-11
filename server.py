@@ -1,9 +1,8 @@
 # coding: utf-8
 from twisted.internet import reactor
-
 from twisted.internet.protocol import ServerFactory, connectionDone
-
 from twisted.protocols.basic import LineOnlyReceiver
+from time import gmtime, strftime
 
 
 class ServerProtocol(LineOnlyReceiver):
@@ -56,7 +55,8 @@ class ServerProtocol(LineOnlyReceiver):
 
         if self.login is not None:
 
-            content = f"{self.login}: {content}"
+            time = strftime("%H:%M:%S", gmtime())
+            content = f"{time} {self.login}: {content}"
             self.factory.add_mess = content
             self.send_mess(content)
 
@@ -68,6 +68,7 @@ class ServerProtocol(LineOnlyReceiver):
 
                 log = content.replace("login: ", "")
                 if self.check_login(log):
+                    
                     self.login = log
                     self.factory.clients.append(self)
                     self.sendLine(f"Welcome, {self.login}!".encode())
@@ -75,6 +76,7 @@ class ServerProtocol(LineOnlyReceiver):
                     self.send_mess(f"{self.login} joined the chat.")
 
             else:
+
                 self.sendLine("Invalid login".encode())
 
 
